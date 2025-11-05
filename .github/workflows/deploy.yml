@@ -23,10 +23,11 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up Cloud SDK with GKE auth plugin
+      - name: Set up Cloud SDK, kubectl and GKE auth plugin
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+          install_kubectl: true
           install_gke_gcloud_auth_plugin: true
 
       - name: Configure Docker authentication
@@ -41,11 +42,14 @@ jobs:
       - name: Get GKE credentials
         run: |
           gcloud container clusters get-credentials $GKE_CLUSTER \
-            --zone $GKE_ZONE --project $PROJECT_ID
+            --zone $GKE_ZONE \
+            --project $PROJECT_ID
 
       - name: Deploy to GKE
         run: |
-          # Update deployment image (remove --record, deprecated)
+          # Update deployment image
           kubectl set image deployment/gke-iris-demo-workload iris-api=$IMAGE:$GITHUB_SHA || true
+          # Apply manifests
           kubectl apply -f k8s/
+          # Wait for rollout
           kubectl rollout status deployment/gke-iris-demo-workload
