@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gke-iris-demo-workload-service   # Service name
+spec:
+  type: LoadBalancer                       # Exposes service externally
+  selector:
+    app: gke-iris-demo-workload           # Must match deployment label
+  ports:
+    - port: 80                             # External port
+      targetPort: 8000                     # Container port

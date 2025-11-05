@@ -1,11 +1,9 @@
-# main.py
 from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
-import numpy as np
 import pandas as pd
 
-# fast api app instance
+# FastAPI instance
 app = FastAPI(title="🌸 Iris Classifier API")
 
 # Load model
@@ -26,6 +24,4 @@ def read_root():
 def predict_species(data: IrisInput):
     input_df = pd.DataFrame([data.dict()])
     prediction = model.predict(input_df)[0]
-    return {
-        "predicted_class": prediction
-    }
+    return {"predicted_class": prediction}

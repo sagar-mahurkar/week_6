@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gke-iris-demo-workload          # Deployment name
+  labels:
+    app: gke-iris-demo-workload         # Label for pods
+spec:
+  replicas: 2                            # Number of pods for high availability
+  selector:
+    matchLabels:
+      app: gke-iris-demo-workload       # Must match template labels
+  template:
+    metadata:
+      labels:
+        app: gke-iris-demo-workload     # Must match selector
+    spec:
+      containers:
+        - name: iris-api-sha256-1       # Container name from GKE pod
+          image: us-central1-docker.pkg.dev/lively-nimbus-473407-m9/my-repo/iris_api:latest
+          ports:
+            - containerPort: 8000       # Must match Dockerfile EXPOSE
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+              ephemeral-storage: "1Gi"
+            limits:
+              ephemeral-storage: "1Gi"
+      restartPolicy: Always

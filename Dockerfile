@@ -1,18 +1,17 @@
-## Dockerfile
-#1. Use official Python base image
+# Use official Python base image
 FROM python:3.10-slim
 
-#2. Set working directory
+# Set working directory
 WORKDIR /app
 
-#3. Copy files
+# Copy app files and model
 COPY . /app
 
-#4. Install dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-#5. Expose port
-EXPOSE 8200
+# Expose port used by FastAPI
+EXPOSE 8000
 
-#6. Command to run the server
-CMD ["uvicorn", "iris_fastapi:app", "--host", "0.0.0.0", "--port", "8200"]
+# Command to run the server
+CMD ["uvicorn", "iris_fastapi:app", "--host", "0.0.0.0", "--port", "8000"]
