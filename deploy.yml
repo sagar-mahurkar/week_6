@@ -8,7 +8,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
   GKE_ZONE: ${{ secrets.GKE_ZONE }}
-  IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/fastapi-app
+  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
 
 jobs:
   deploy:
@@ -18,15 +18,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
 
-      - name: Configure Docker
-        run: gcloud auth configure-docker gcr.io
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: Build Docker image
         run: docker build -t $IMAGE:$GITHUB_SHA .
@@ -39,6 +42,7 @@ jobs:
 
       - name: Deploy to GKE
         run: |
-          kubectl set image deployment/fastapi-deployment fastapi=$IMAGE:$GITHUB_SHA --record || \
+          # Update deployment image
+          kubectl set image deployment/gke-iris-demo-workload iris-api=$IMAGE:$GITHUB_SHA --record || true
           kubectl apply -f k8s/
-          kubectl rollout status deployment/fastapi-deployment
+          kubectl rollout status deployment/gke-iris-demo-workload
