@@ -8,13 +8,9 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
   GKE_ZONE: ${{ secrets.GKE_ZONE }}
-<<<<<<< HEAD
-  IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
-=======
   REGION: us-central1
-  REPOSITORY: fastapi-repo
-  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/fastapi-repo/fastapi-app
->>>>>>> 774f97047765e6f2f9c84bf8b6cc4c6b380d5cde
+  REPOSITORY: my-repo
+  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
 
 jobs:
   deploy:
@@ -24,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Cloud SDK
+      - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -46,6 +42,6 @@ jobs:
       - name: Deploy to GKE
         run: |
           # Update deployment image or create new deployment
-          kubectl set image deployment/fastapi-deployment fastapi=$IMAGE:$GITHUB_SHA --record || true
+          kubectl set image deployment/iris-api-deployment iris-api=$IMAGE:$GITHUB_SHA --record || true
           kubectl apply -f k8s/
-          kubectl rollout status deployment/fastapi-deployment
+          kubectl rollout status deployment/iris-api-deployment
