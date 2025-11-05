@@ -9,7 +9,6 @@ env:
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
   GKE_ZONE: ${{ secrets.GKE_ZONE }}
   REGION: us-central1
-  REPOSITORY: my-repo
   IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
 
 jobs:
@@ -33,17 +32,13 @@ jobs:
           gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
           gcloud config set account $(gcloud auth list --format="value(account)" --filter="status:ACTIVE")
 
-      - name: Authenticate Docker to Artifact Registry
+      - name: Configure Docker authentication
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
           gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
 
       - name: Build Docker image
         run: docker build -t $IMAGE:$GITHUB_SHA .
-
-      - name: Verify Docker auth
-        run: cat ~/.docker/config.json
-
 
       - name: Push Docker image
         run: docker push $IMAGE:$GITHUB_SHA
@@ -53,7 +48,7 @@ jobs:
 
       - name: Deploy to GKE
         run: |
-          # Update deployment image or create new deployment
-          kubectl set image deployment/iris-api-deployment iris-api=$IMAGE:$GITHUB_SHA --record || true
-          kubectl apply -f k8s/
-          kubectl rollout status deployment/iris-api-deployment
+          kubectl set image deployment/iris-deployment iris=$IMAGE:$GITHUB_SHA --record || true
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/iris-deployment
