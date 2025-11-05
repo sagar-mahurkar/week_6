@@ -1,29 +1,30 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1                     # API version for Deployment resources
+kind: Deployment                        # Specifies this is a Deployment object
 metadata:
-  name: gke-iris-demo-workload         # Deployment name
+  name: gke-iris-demo-workload          # Name of the deployment; must be unique in the namespace
   labels:
-    app: gke-iris-demo-workload        # Deployment label
+    app: gke-iris-demo-workload         # Label applied to the deployment; used to match pods with services
 spec:
-  replicas: 2                           # Number of pods
+  replicas: 2                            # Number of pod replicas to maintain (desired state)
   selector:
     matchLabels:
-      app: gke-iris-demo-workload      # Must match template labels
-  template:
+      app: gke-iris-demo-workload       # Selector defines which pods belong to this deployment; must match template labels
+  template:                              # Pod template used to create pods
     metadata:
       labels:
-        app: gke-iris-demo-workload    # Must match selector
+        app: gke-iris-demo-workload     # Labels applied to pods; must match selector
     spec:
       containers:
-        - name: iris-api                # Updated container name
+        - name: iris-api                 # Name of the container inside the pod; used by kubectl set image
           image: us-central1-docker.pkg.dev/lively-nimbus-473407-m9/my-repo/iris_api:latest
+                                           # Docker image to deploy; include tag if needed
           ports:
-            - containerPort: 8000
-          resources:
+            - containerPort: 8000        # Port that the container exposes; used by Kubernetes networking
+          resources:                      # Resource requests and limits
             requests:
-              cpu: "500m"
-              memory: "2Gi"
-              ephemeral-storage: "1Gi"
+              cpu: "500m"                # CPU requested for scheduling
+              memory: "2Gi"              # Memory requested for scheduling
+              ephemeral-storage: "1Gi"  # Disk storage requested for scheduling
             limits:
-              ephemeral-storage: "1Gi"
-      restartPolicy: Always
+              ephemeral-storage: "1Gi"  # Max disk storage the container can use
+      restartPolicy: Always               # Restart policy for pods; Always means restart on failure
