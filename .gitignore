@@ -1,3 +1,5 @@
 /.ipynb_checkpoints/
 /__pycache__/
 /key.json
+/.ipynb_checkpoints/clusterrolebinding-checkpoint.yaml
+/k8s/.ipynb_checkpoints/clusterrolebinding-checkpoint.yaml
