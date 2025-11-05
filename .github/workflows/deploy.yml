@@ -8,10 +8,10 @@ on:
 
 # Environment variables for reuse
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}      # GCP project ID
-  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}       # GKE cluster name
-  GKE_ZONE: ${{ secrets.GKE_ZONE }}             # GKE cluster zone
-  REGION: us-central1                            # Artifact Registry region
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}              # Your GCP project ID
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}               # GKE cluster name
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}                     # GKE cluster zone (e.g., us-central1-a)
+  REGION: us-central1                                     # Artifact Registry region
   IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api  # Artifact Registry image path
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_kubectl: true
 
-      # 4️⃣ Configure Docker authentication with Artifact Registry
+      # 4️⃣ Configure Docker to authenticate with Artifact Registry
       - name: Configure Docker authentication
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
@@ -44,7 +44,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t $IMAGE:$GITHUB_SHA .
 
-      # 6️⃣ Push Docker image
+      # 6️⃣ Push Docker image to Artifact Registry
       - name: Push Docker image
         run: docker push $IMAGE:$GITHUB_SHA
 
@@ -56,18 +56,17 @@ jobs:
           location: ${{ env.GKE_ZONE }}
           project_id: ${{ env.PROJECT_ID }}
 
-      # 8️⃣ Deploy the application to GKE (safe rollout)
+      # 8️⃣ Deploy the application to GKE
       - name: Deploy to GKE
         run: |
           echo "Updating deployment image..."
+          # Update deployment image with correct container name
           kubectl set image deployment/gke-iris-demo-workload iris-api-sha256-1=$IMAGE:$GITHUB_SHA || true
+          
           echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
-          
-          echo "Waiting for rollout with timeout..."
-          kubectl rollout status deployment/gke-iris-demo-workload --timeout=180s || echo "Rollout may be incomplete, check pods below"
 
-      # 9️⃣ Debug: Print pod status and logs for troubleshooting
+      # 9️⃣ Debug: Show pod status and logs
       - name: Debug pods
         run: |
           echo "Listing all pods in the deployment:"
