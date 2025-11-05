@@ -1,19 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi-deployment
+  name: iris-deployment
+  labels:
+    app: iris
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: fastapi
+      app: iris
   template:
     metadata:
       labels:
-        app: fastapi
+        app: iris
     spec:
       containers:
-      - name: fastapi
-        image: gcr.io/${GCP_PROJECT_ID}/fastapi-app:latest
-        ports:
-        - containerPort: 8000
+        - name: iris
+          image: us-central1-docker.pkg.dev/lively-nimbus-473407-m9/my-repo/iris_api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
