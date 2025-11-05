@@ -1,31 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gke-iris-demo-workload        # From table #10
+  name: gke-iris-demo-workload       # Deployment name
   labels:
-    app: iris-api                      # Fixed deployment label
+    app: iris-api                     # Deployment label
 spec:
-  replicas: 2
+  replicas: 2                         # Number of pod replicas
   selector:
     matchLabels:
-      app: iris-api                    # Must match pod labels
+      app: iris-api                   # Must match template labels
   template:
     metadata:
       labels:
-        app: iris-api                  # Pod labels
+        app: iris-api                 # Must match selector
     spec:
       containers:
-        - name: iris-api               # Fixed container name (#11)
-          image: us-central1-docker.pkg.dev/lively-nimbus-473407-m9/my-repo/iris_api:latest  # IMAGE (#12)
+        - name: iris-api              # Clean container name
+          image: us-central1-docker.pkg.dev/lively-nimbus-473407-m9/my-repo/iris_api:latest
           ports:
-            - containerPort: 8000      # (#13)
+            - containerPort: 8000
           resources:
-            limits:
-              memory: "2Gi"
-              cpu: "500m"
             requests:
               memory: "2Gi"
               cpu: "500m"
-          env:
-            - name: MODEL_PATH
-              value: "/app/model.joblib"
+            limits:
+              ephemeral-storage: "1Gi"
+      restartPolicy: Always
