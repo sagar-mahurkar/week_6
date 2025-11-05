@@ -8,10 +8,10 @@ on:
 
 # Environment variables for reuse
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}              # Your GCP project ID
-  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}              # GKE cluster name
-  GKE_ZONE: ${{ secrets.GKE_ZONE }}                    # GKE cluster zone (e.g., us-central1-a)
-  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api  # Artifact Registry image path
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  IMAGE: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
 
 jobs:
   deploy:
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Authenticate to Google Cloud using Service Account
+      # 2️⃣ Authenticate to Google Cloud
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
@@ -35,7 +35,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_kubectl: true
 
-      # 4️⃣ Configure Docker authentication for Artifact Registry
+      # 4️⃣ Configure Docker authentication
       - name: Configure Docker authentication
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
@@ -47,7 +47,7 @@ jobs:
       - name: Push Docker image
         run: docker push $IMAGE:$GITHUB_SHA
 
-      # 7️⃣ Get GKE credentials (handles gke-gcloud-auth-plugin automatically)
+      # 7️⃣ Get GKE credentials
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -55,29 +55,33 @@ jobs:
           location: ${{ env.GKE_ZONE }}
           project_id: ${{ env.PROJECT_ID }}
 
-      # 8️⃣ Deploy application to GKE with safe rollout
+      # 8️⃣ Deploy the application with safe rollout
       - name: Deploy to GKE
         run: |
           echo "Updating deployment image..."
-          # Use exact container name from Deployment
           kubectl set image deployment/gke-iris-demo-workload iris-api-sha256-1=$IMAGE:$GITHUB_SHA || true
-
           echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
-
-          echo "Waiting for rollout with timeout (120s per pod)..."
-          # Safe rollout: don't fail workflow immediately if rollout hangs, print message instead
-          kubectl rollout status deployment/gke-iris-demo-workload --timeout=120s || echo "Rollout may be incomplete, check pods below"
-
-      # 9️⃣ Debug: show pod status and logs for troubleshooting
-      - name: Debug pods
-        run: |
-          echo "Listing all pods in the deployment:"
-          kubectl get pods -l app=gke-iris-demo-workload -o wide
           
-          echo "Describing pods to see events and status:"
-          kubectl describe pods -l app=gke-iris-demo-workload
-          
-          echo "Showing logs of first pod container (for debugging startup issues):"
-          POD_NAME=$(kubectl get pods -l app=gke-iris-demo-workload -o jsonpath="{.items[0].metadata.name}")
-          kubectl logs $POD_NAME -c iris-api-sha256-1
+          echo "Waiting for rollout with timeout..."
+          if ! kubectl rollout status deployment/gke-iris-demo-workload --timeout=180s; then
+            echo "⚠️ Rollout timed out. Gathering pod status and logs for debugging..."
+            
+            # List pods with status
+            kubectl get pods -l app=gke-iris-demo-workload -o wide
+            
+            # Describe pods to see events
+            kubectl describe pods -l app=gke-iris-demo-workload
+            
+            # Print logs of all containers
+            for POD in $(kubectl get pods -l app=gke-iris-demo-workload -o jsonpath="{.items[*].metadata.name}"); do
+              echo "===== Logs for pod: $POD ====="
+              for CONTAINER in $(kubectl get pod $POD -o jsonpath="{.spec.containers[*].name}"); do
+                echo "--- Container: $CONTAINER ---"
+                kubectl logs $POD -c $CONTAINER || echo "No logs found"
+              done
+            done
+            
+            # Fail the workflow after printing logs
+            exit 1
+          fi
