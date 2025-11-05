@@ -1,8 +1,10 @@
 name: Deploy to GKE
 
+# Triggers: push to main + manual dispatch
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:   # allows manual run from GitHub Actions UI
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -55,7 +57,7 @@ jobs:
       # 8️⃣ Deploy to GKE
       - name: Deploy to GKE
         run: |
-          # Update deployment image (without --record)
+          # Update deployment image
           kubectl set image deployment/gke-iris-demo-workload iris-api=$IMAGE:$GITHUB_SHA || true
           # Apply manifests
           kubectl apply -f k8s/
