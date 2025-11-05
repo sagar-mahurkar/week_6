@@ -28,10 +28,16 @@ jobs:
           export_default_credentials: true
 
       - name: Configure Docker authentication for Artifact Registry
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
 
       - name: Build Docker image
         run: docker build -t $IMAGE:$GITHUB_SHA .
+
+      - name: Verify Docker auth
+        run: cat ~/.docker/config.json
+
 
       - name: Push Docker image
         run: docker push $IMAGE:$GITHUB_SHA
