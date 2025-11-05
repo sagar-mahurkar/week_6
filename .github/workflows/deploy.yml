@@ -8,7 +8,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
   GKE_ZONE: ${{ secrets.GKE_ZONE }}
-  IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/fastapi-app
+  IMAGE: gcr.io/${{ secrets.GCP_PROJECT_ID }}/my-repo/iris_api
 
 jobs:
   deploy:
