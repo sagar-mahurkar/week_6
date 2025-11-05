@@ -22,7 +22,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Authenticate to Google Cloud
+      # 2️⃣ Authenticate to Google Cloud using Service Account
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
@@ -35,7 +35,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_kubectl: true
 
-      # 4️⃣ Configure Docker to authenticate with Artifact Registry
+      # 4️⃣ Configure Docker authentication for Artifact Registry
       - name: Configure Docker authentication
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
@@ -47,7 +47,7 @@ jobs:
       - name: Push Docker image
         run: docker push $IMAGE:$GITHUB_SHA
 
-      # 7️⃣ Get GKE credentials (handles auth plugin automatically)
+      # 7️⃣ Get GKE credentials (handles gke-gcloud-auth-plugin automatically)
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -55,20 +55,21 @@ jobs:
           location: ${{ env.GKE_ZONE }}
           project_id: ${{ env.PROJECT_ID }}
 
-      # 8️⃣ Deploy the application to GKE (safe rollout)
+      # 8️⃣ Deploy application to GKE with safe rollout
       - name: Deploy to GKE
         run: |
           echo "Updating deployment image..."
           # Use exact container name from Deployment
           kubectl set image deployment/gke-iris-demo-workload iris-api-sha256-1=$IMAGE:$GITHUB_SHA || true
+
           echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
-          
-          # 9️⃣ Safe rollout: wait up to 120s for each pod, then continue
-          echo "Waiting for rollout with timeout..."
+
+          echo "Waiting for rollout with timeout (120s per pod)..."
+          # Safe rollout: don't fail workflow immediately if rollout hangs, print message instead
           kubectl rollout status deployment/gke-iris-demo-workload --timeout=120s || echo "Rollout may be incomplete, check pods below"
 
-      # 10️⃣ Debug: Show pod status and logs for troubleshooting
+      # 9️⃣ Debug: show pod status and logs for troubleshooting
       - name: Debug pods
         run: |
           echo "Listing all pods in the deployment:"
