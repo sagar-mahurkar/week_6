@@ -1,10 +1,10 @@
 name: Deploy to GKE
 
-# Triggers: push to main + manual dispatch
+# Triggers: push to main + manual workflow dispatch
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:   # allows manual run from GitHub Actions UI
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -21,12 +21,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Authenticate with GCP using Service Account
-      - name: Authenticate to Google Cloud
-        run: |
-          echo "${{ secrets.GCP_SA_KEY }}" > "${HOME}/gcp-key.json"
-          gcloud auth activate-service-account --key-file="${HOME}/gcp-key.json"
-          gcloud config set project $PROJECT_ID
+      # 2️⃣ Authenticate to Google Cloud (recommended method)
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       # 3️⃣ Set up Cloud SDK and kubectl
       - name: Set up Cloud SDK and kubectl
@@ -35,7 +34,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_kubectl: true
 
-      # 4️⃣ Configure Docker authentication for Artifact Registry
+      # 4️⃣ Configure Docker for Artifact Registry
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
@@ -59,7 +58,7 @@ jobs:
         run: |
           # Update deployment image
           kubectl set image deployment/gke-iris-demo-workload iris-api=$IMAGE:$GITHUB_SHA || true
-          # Apply manifests
+          # Apply Kubernetes manifests
           kubectl apply -f k8s/
           # Wait for rollout
           kubectl rollout status deployment/gke-iris-demo-workload
